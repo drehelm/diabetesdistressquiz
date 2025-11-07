@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Diabetes Distress Screening Scale (DDS-17) – Calculator</title>
+  <meta name="description" content="Client‑side DDS‑17 questionnaire and scorer for GitHub Pages. No data leaves your browser." />
+  <style>
+    :root{
+      --fg:#0f172a;/* slate-900 */
+      --muted:#475569;/* slate-600 */
+      --bg:#f8fafc;/* slate-50 */
+      --card:#ffffff;
+      --brand:#2563eb;/* blue-600 */
+      --accent:#10b981;/* emerald-500 */
+      --warn:#f59e0b;/* amber-500 */
+      --danger:#ef4444;/* red-500 */
+      --ring: 0 0 0 3px rgba(37,99,235,.15);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font:16px/1.55 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";color:var(--fg);background:var(--bg)}
+    header{position:sticky;top:0;background:linear-gradient(to bottom, rgba(248,250,252,.9), rgba(248,250,252,.75));backdrop-filter:saturate(150%) blur(6px);z-index:10;border-bottom:1px solid #e5e7eb}
+    .wrap{max-width:1000px;margin-inline:auto;padding:1rem}
+    .title{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}
+    .pill{font-size:.8rem;padding:.25rem .5rem;border-radius:999px;background:#e2e8f0;color:#0f172a}
+    main{padding:1rem}
+    .card{background:var(--card);border:1px solid #e5e7eb;border-radius:1rem;box-shadow:0 10px 25px rgba(2,6,23,.05);padding:1rem;margin:1rem 0}
+    .controls{display:flex;flex-wrap:wrap;gap:.5rem}
+    .btn{appearance:none;border:1px solid #e5e7eb;background:#fff;color:var(--fg);padding:.6rem .9rem;border-radius:.75rem;cursor:pointer;font-weight:600}
+    .btn:hover{box-shadow:var(--ring)}
+    .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+    .btn.ghost{background:transparent}
+    fieldset{border:none;margin:0;padding:0}
+    .q{display:grid;grid-template-columns: 1fr auto;gap:.75rem;padding:1rem;border-radius:.75rem;border:1px solid #e5e7eb;margin:.75rem 0;background:#fff}
+    .q h3{margin:.15rem 0;font-size:1rem}
+    .scale{display:grid;grid-auto-flow:column;gap:.4rem;align-items:center}
+    .scale label{display:grid;place-items:center;font-size:.9rem;color:var(--muted)}
+    .scale input{accent-color:var(--brand)}
+    .legend{display:grid;grid-template-columns:repeat(6,1fr);gap:.25rem;margin:.25rem 0 0 0;font-size:.75rem;color:var(--muted)}
+    .results{display:grid;gap:.75rem}
+    .stat{display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;border-radius:.75rem;border:1px solid #e5e7eb;background:#fff}
+    .stat .score{font-weight:800}
+    .flag{font-size:.8rem;font-weight:700;padding:.25rem .5rem;border-radius:.5rem}
+    .ok{background:rgba(16,185,129,.12);color:#065f46;border:1px solid rgba(16,185,129,.3)}
+    .warn{background:rgba(245,158,11,.12);color:#92400e;border:1px solid rgba(245,158,11,.3)}
+    .danger{background:rgba(239,68,68,.12);color:#7f1d1d;border:1px solid rgba(239,68,68,.3)}
+    details{background:#fff;border:1px solid #e5e7eb;border-radius:.75rem;padding:.5rem 1rem}
+    details summary{cursor:pointer;font-weight:600}
+    footer{color:var(--muted);padding:2rem 1rem}
+    .grid{display:grid;gap:1rem}
+    @media (min-width:900px){
+      .grid{grid-template-columns:1fr 320px}
+    }
+    .subtle{color:var(--muted)}
+    .req{color:var(--danger);font-weight:700}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap title">
+      <h1 style="margin:0">Diabetes Distress Screening Scale (DDS‑17)</h1>
+      <span class="pill">client‑side • no tracking</span>
+    </div>
+  </header>
+
+  <main class="wrap grid">
+    <section>
+      <div class="card">
+        <p class="subtle" id="intro">
+          Rate how much each item has distressed or bothered you <strong>during the past month</strong>.
+          1 = Not a problem … 6 = A very serious problem.
+        </p>
+        <form id="form" novalidate>
+          <!-- Questions render here -->
+        </form>
+        <div class="controls" style="margin-top:.5rem">
+          <button class="btn primary" id="calcBtn" type="button">Calculate scores</button>
+          <button class="btn" id="resetBtn" type="button">Reset</button>
+          <button class="btn ghost" id="printBtn" type="button">Print / Save PDF</button>
+          <button class="btn ghost" id="saveBtn" type="button" title="Save to this browser">Save</button>
+          <button class="btn ghost" id="loadBtn" type="button">Load</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0">Results</h2>
+        <div id="results" class="results">
+          <div class="subtle">Complete all 17 items, then click <em>Calculate scores</em>.</div>
+        </div>
+        <details style="margin-top:.75rem"><summary>Scoring notes</summary>
+          <p>Mean item score ≥ <strong>3.0</strong> indicates at least <em>moderate</em> distress and is considered worthy of clinical attention. Subscales:</p>
+          <ul>
+            <li><strong>Emotional Burden (EB):</strong> items 1, 3, 8, 11, 14 (÷ 5)</li>
+            <li><strong>Physician‑related Distress (PD):</strong> items 2, 4, 9, 15 (÷ 4)</li>
+            <li><strong>Regimen‑related Distress (RD):</strong> items 5, 6, 10, 12, 16 (÷ 5)</li>
+            <li><strong>Interpersonal Distress (ID):</strong> items 7, 13, 17 (÷ 3)</li>
+          </ul>
+          <p class="subtle">Attribution: DDS‑17 content © original authors; reproduced here for non‑commercial, clinical/educational use. See source PDF for full details.</p>
+        </details>
+      </div>
+    </section>
+
+    <aside>
+      <div class="card">
+        <h3 style="margin-top:0">About</h3>
+        <p class="subtle">This open‑source page implements the DDS‑17 questionnaire and scoring client‑side so you can host it on GitHub Pages. Your entries are not sent anywhere.</p>
+        <ul class="subtle">
+          <li><strong>Keyboard:</strong> Use 1–6 to select a score when a question is focused.</li>
+          <li><strong>Privacy:</strong> Use <em>Save</em>/<em>Load</em> to store answers in <code>localStorage</code> on this device only.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Export</h3>
+        <p class="subtle">Use <em>Print / Save PDF</em> to create a record of responses and scores.</p>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="wrap subtle">
+    <div>Built for GitHub Pages • No frameworks • MIT License (code only). DDS‑17 © respective copyright holders.</div>
+  </footer>
+
+  <script>
+  // DDS-17 items and subscale mapping per the scoring sheet.
+  // Source: "The Diabetes Distress Screening Scale (DDS17)" scoring sheet.
+  const ITEMS = [
+    {n:1,  text:"Feeling that diabetes is taking up too much of my mental and physical energy every day.", sub:"EB"},
+    {n:2,  text:"Feeling that my doctor doesn't know enough about diabetes and diabetes care.", sub:"PD"},
+    {n:3,  text:"Feeling angry, scared, and/or depressed when I think about living with diabetes.", sub:"EB"},
+    {n:4,  text:"Feeling that my doctor doesn't give me clear enough directions on how to manage my diabetes.", sub:"PD"},
+    {n:5,  text:"Feeling that I am not testing my blood sugars frequently enough.", sub:"RD"},
+    {n:6,  text:"Feeling that I am often failing with my diabetes routine.", sub:"RD"},
+    {n:7,  text:"Feeling that friends or family are not supportive enough of self-care efforts (e.g., planning activities that conflict with my schedule, encouraging me to eat the 'wrong' foods).", sub:"ID"},
+    {n:8,  text:"Feeling that diabetes controls my life.", sub:"EB"},
+    {n:9,  text:"Feeling that my doctor doesn't take my concerns seriously enough.", sub:"PD"},
+    {n:10, text:"Not feeling confident in my day-to-day ability to manage diabetes.", sub:"RD"},
+    {n:11, text:"Feeling that I will end up with serious long-term complications, no matter what I do.", sub:"EB"},
+    {n:12, text:"Feeling that I am not sticking closely enough to a good meal plan.", sub:"RD"},
+    {n:13, text:"Feeling that friends or family don't appreciate how difficult living with diabetes can be.", sub:"ID"},
+    {n:14, text:"Feeling overwhelmed by the demands of living with diabetes.", sub:"EB"},
+    {n:15, text:"Feeling that I don't have a doctor who I can see regularly enough about my diabetes.", sub:"PD"},
+    {n:16, text:"Not feeling motivated to keep up my diabetes self management.", sub:"RD"},
+    {n:17, text:"Feeling that friends or family don't give me the emotional support that I would like.", sub:"ID"},
+  ];
+  const SUB_NAMES = {EB:"Emotional Burden", PD:"Physician-related Distress", RD:"Regimen-related Distress", ID:"Interpersonal Distress"};
+  const SUB_DIV = {EB:5, PD:4, RD:5, ID:3};
+
+  const form = document.getElementById('form');
+  const results = document.getElementById('results');
+
+  function renderQuestions(){
+    const fs = document.createDocumentFragment();
+    ITEMS.forEach(item => {
+      const wrap = document.createElement('fieldset');
+      wrap.className = 'q';
+      wrap.innerHTML = `
+        <div>
+          <h3><span class="subtle">${item.n}.</span> ${item.text}</h3>
+          <div class="legend" aria-hidden="true">
+            <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div>
+          </div>
+        </div>
+        <div class="scale" role="radiogroup" aria-label="Question ${item.n}">
+          ${[1,2,3,4,5,6].map(v=>`
+            <label>
+              <input type="radio" name="q${item.n}" value="${v}" required>
+              <div>${v}</div>
+            </label>
+          `).join('')}
+        </div>`;
+
+      // Keyboard shortcuts 1..6 when focused
+      wrap.addEventListener('keydown', (e)=>{
+        const k = parseInt(e.key,10);
+        if(k>=1 && k<=6){
+          const input = wrap.querySelector(`input[value="${k}"]`);
+          if(input){ input.checked = true; e.preventDefault(); }
+        }
+      });
+      fs.appendChild(wrap);
+    });
+    form.appendChild(fs);
+  }
+
+  function getValues(){
+    const vals = {};
+    let complete = true;
+    ITEMS.forEach(i=>{
+      const sel = form.querySelector(`input[name="q${i.n}"]:checked`);
+      if(!sel){ complete = false; }
+      vals[i.n] = sel ? Number(sel.value) : null;
+    });
+    return {vals, complete};
+  }
+
+  function mean(arr){
+    const s = arr.reduce((a,b)=>a+b,0);
+    return s/arr.length;
+  }
+
+  function badge(score){
+    const span = document.createElement('span');
+    span.className = 'flag ' + (score >= 3.0 ? (score >= 4.0 ? 'danger' : 'warn') : 'ok');
+    span.textContent = (score >= 3.0 ? (score >= 4.0 ? '≥4 High' : '≥3 Moderate') : '<3 Low');
+    return span;
+  }
+
+  function calc(){
+    const {vals, complete} = getValues();
+    if(!complete){
+      results.innerHTML = '<div><span class="req">Incomplete.</span> Please answer all 17 items.</div>';
+      return;
+    }
+    const all = ITEMS.map(i=>vals[i.n]);
+    const totalMean = Number(mean(all).toFixed(2));
+
+    // Subscales
+    const bySub = {EB:[], PD:[], RD:[], ID:[]};
+    ITEMS.forEach(i => bySub[i.sub].push(vals[i.n]));
+    const subMeans = Object.fromEntries(Object.entries(bySub).map(([k,arr])=>[k, Number(mean(arr).toFixed(2))]));
+
+    // Render
+    const frag = document.createDocumentFragment();
+
+    const mk = (label, score) => {
+      const row = document.createElement('div');
+      row.className = 'stat';
+      row.innerHTML = `<div>${label}</div><div class="score">${score.toFixed(2)}</div>`;
+      row.appendChild(badge(score));
+      return row;
+    };
+
+    frag.appendChild(mk('Total DDS mean (17 items ÷ 17)', totalMean));
+    frag.appendChild(mk(`Emotional Burden (items 1,3,8,11,14 ÷ ${SUB_DIV.EB})`, subMeans.EB));
+    frag.appendChild(mk(`Physician-related Distress (items 2,4,9,15 ÷ ${SUB_DIV.PD})`, subMeans.PD));
+    frag.appendChild(mk(`Regimen-related Distress (items 5,6,10,12,16 ÷ ${SUB_DIV.RD})`, subMeans.RD));
+    frag.appendChild(mk(`Interpersonal Distress (items 7,13,17 ÷ ${SUB_DIV.ID})`, subMeans.ID));
+
+    // Optional: list any single items ≥3 to prompt discussion
+    const flagged = ITEMS.filter(i => vals[i.n] >= 3).map(i=>`${i.n}`);
+    const note = document.createElement('div');
+    note.className = 'subtle';
+    note.style.marginTop = '.5rem';
+    note.textContent = flagged.length ? `Items ≥3: ${flagged.join(', ')}.` : 'No items ≥3.';
+    frag.appendChild(note);
+
+    results.replaceChildren(frag);
+  }
+
+  function resetAll(){
+    form.reset();
+    results.innerHTML = '<div class="subtle">Complete all 17 items, then click <em>Calculate scores</em>.</div>';
+    localStorage.removeItem('dds17Answers');
+  }
+
+  function save(){
+    const {vals} = getValues();
+    localStorage.setItem('dds17Answers', JSON.stringify(vals));
+  }
+  function load(){
+    const raw = localStorage.getItem('dds17Answers');
+    if(!raw) return;
+    const vals = JSON.parse(raw);
+    ITEMS.forEach(i=>{
+      const v = vals[i.n];
+      if(v){
+        const input = form.querySelector(`input[name="q${i.n}"][value="${v}"]`);
+        if(input) input.checked = true;
+      }
+    });
+  }
+
+  // Wire up UI
+  document.getElementById('calcBtn').addEventListener('click', calc);
+  document.getElementById('resetBtn').addEventListener('click', resetAll);
+  document.getElementById('printBtn').addEventListener('click', ()=>window.print());
+  document.getElementById('saveBtn').addEventListener('click', ()=>{save(); alert('Saved on this device.');});
+  document.getElementById('loadBtn').addEventListener('click', ()=>{load(); alert('Loaded from this device.');});
+
+  // Initial render
+  renderQuestions();
+  load();
+  </script>
+</body>
+</html>
