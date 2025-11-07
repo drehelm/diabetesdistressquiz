@@ -78,7 +78,7 @@
       #printReport h1{ font-size:11pt; margin:0 0 4pt 0; }
       #printReport h2{ font-size:10pt; margin:6pt 0 2pt 0; }
       #printReport .small{ font-size:8.2pt; color:#000; }
-      #printReport pre{ white-space:pre-wrap; word-wrap:break-word; margin:0 }
+      #printBody{ white-space:pre-wrap; word-wrap:break-word; margin:0 }
       #printQuestions{ font: 8.2pt/1.2 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; margin:2pt 0 0 0; padding:0 0 0 14pt; columns: 2; column-gap: 10mm; }
       #printQuestions li{ break-inside: avoid; page-break-inside: avoid; margin:0 0 3pt 0; padding:2pt 4pt; border-left: 2pt solid transparent; }
       #printQuestions li.high{ background: #fff6db; border-left-color:#f59e0b; }
@@ -320,7 +320,6 @@
 
     // Summary (plain text)
     const lines = [];
-    // Nicer full-text labels
     if(!Number.isNaN(totalMean)){
       const flag = totalMean >= 4 ? 'HIGH' : (totalMean >= 3 ? 'MODERATE' : 'LOW');
       lines.push(`TOTAL DISTRESS MEAN (all 17 items): ${totalMean.toFixed(2)}  [${flag}]`);
@@ -329,11 +328,10 @@
     }
     const fmt = (v)=> Number.isNaN(v) ? '—' : v.toFixed(2);
     lines.push(`Emotional Burden (EB): ${fmt(subMeans.EB)}`);
-    lines.push(`Physician‑Related Distress (PD): ${fmt(subMeans.PD)}`);
-    lines.push(`Regimen‑Related Distress (RD): ${fmt(subMeans.RD)}`);
+    lines.push(`Physician-Related Distress (PD): ${fmt(subMeans.PD)}`);
+    lines.push(`Regimen-Related Distress (RD): ${fmt(subMeans.RD)}`);
     lines.push(`Interpersonal Distress (ID): ${fmt(subMeans.ID)}`);
-    printBody.textContent = lines.join('
-');
+    printBody.textContent = lines.join('\n');
 
     // Questions (HTML list, highlighted where score ≥3)
     printQuestions.replaceChildren();
@@ -342,7 +340,6 @@
       const score = vals[i.n];
       const flagged = (score != null && score >= 3);
       if(flagged) li.classList.add('high');
-      // compact formatting: number, question text, [score]
       li.textContent = `${i.n}. ${i.text}  [${score ?? '—'}]`;
       printQuestions.appendChild(li);
     });
@@ -396,8 +393,7 @@
     // Restore: clear form
     clearAllAnswers();
 
-    testOutput.textContent = out.join('
-');
+    testOutput.textContent = out.join('\n');
   }
 
   // Wire up UI
@@ -409,7 +405,6 @@
 
   // Initial render
   renderQuestions();
-  
   </script>
 </body>
 </html>
