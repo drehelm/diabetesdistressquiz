@@ -320,15 +320,20 @@
 
     // Summary (plain text)
     const lines = [];
+    // Nicer full-text labels
     if(!Number.isNaN(totalMean)){
-      const flag = totalMean >= 4 ? 'HIGH' : (totalMean >= 3 ? 'MOD' : 'LOW');
-      lines.push(`TOTAL MEAN: ${totalMean.toFixed(2)}  [${flag}]`);
+      const flag = totalMean >= 4 ? 'HIGH' : (totalMean >= 3 ? 'MODERATE' : 'LOW');
+      lines.push(`TOTAL DISTRESS MEAN (all 17 items): ${totalMean.toFixed(2)}  [${flag}]`);
     } else {
-      lines.push('TOTAL MEAN: —   (incomplete)');
+      lines.push('TOTAL DISTRESS MEAN: —   (incomplete)');
     }
     const fmt = (v)=> Number.isNaN(v) ? '—' : v.toFixed(2);
-    lines.push(`EB: ${fmt(subMeans.EB)}   PD: ${fmt(subMeans.PD)}   RD: ${fmt(subMeans.RD)}   ID: ${fmt(subMeans.ID)}`);
-    printBody.textContent = lines.join('\n');
+    lines.push(`Emotional Burden (EB): ${fmt(subMeans.EB)}`);
+    lines.push(`Physician‑Related Distress (PD): ${fmt(subMeans.PD)}`);
+    lines.push(`Regimen‑Related Distress (RD): ${fmt(subMeans.RD)}`);
+    lines.push(`Interpersonal Distress (ID): ${fmt(subMeans.ID)}`);
+    printBody.textContent = lines.join('
+');
 
     // Questions (HTML list, highlighted where score ≥3)
     printQuestions.replaceChildren();
@@ -391,7 +396,8 @@
     // Restore: clear form
     clearAllAnswers();
 
-    testOutput.textContent = out.join('\n');
+    testOutput.textContent = out.join('
+');
   }
 
   // Wire up UI
