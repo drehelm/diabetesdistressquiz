@@ -12,7 +12,6 @@
       --bg:#f8fafc;/* slate-50 */
       --card:#ffffff;
       --brand:#2563eb;/* blue-600 */
-      --accent:#10b981;/* emerald-500 */
       --warn:#f59e0b;/* amber-500 */
       --danger:#ef4444;/* red-500 */
       --ring: 0 0 0 3px rgba(37,99,235,.15);
@@ -54,7 +53,7 @@
     .subtle{color:var(--muted)}
     .req{color:var(--danger);font-weight:700}
 
-    /* PRINT-FRIENDLY LAYOUT */
+    /* PRINT-FRIENDLY LAYOUT for on-screen cards */
     @media print {
       @page { size: auto; margin: 12mm; }
       body{ background:#fff; }
@@ -66,6 +65,19 @@
       .q{ border:1px solid #ccc; margin:.4rem 0; padding:.6rem; }
       .legend{ color:#111; }
       .grid{ grid-template-columns:1fr !important; }
+    }
+
+    /* PRINT-ONE-PAGE REPORT */
+    #printReport{display:none}
+    @media print {
+      @page { size: Letter; margin: 8mm; }
+      html, body{ background:#fff; }
+      header, main, footer{ display:none !important; }
+      #printReport{ display:block !important; padding:0; margin:0; }
+      #printReport{ font: 9.5pt/1.25 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; color:#000; }
+      #printReport h1{ font-size:12pt; margin:0 0 4pt 0; }
+      #printReport .small{ font-size:9pt; color:#000; }
+      #printReport pre{ white-space:pre-wrap; word-wrap:break-word; margin:0 }
     }
   </style>
 </head>
@@ -118,14 +130,27 @@
         <p class="subtle">This open‑source page implements the DDS‑17 questionnaire and scoring client‑side so you can host it on GitHub Pages. Your entries are not sent anywhere.</p>
         <ul class="subtle">
           <li><strong>Keyboard:</strong> Use 1–6 to select a score when a question is focused.</li>
+          <li><strong>Dev:</strong> A self‑test harness is included (hidden) to catch regressions.</li>
         </ul>
       </div>
       <div class="card">
         <h3 style="margin-top:0">Export</h3>
         <p class="subtle">Use <em>Print / Save PDF</em> to create a record of responses and scores.</p>
       </div>
+      <div class="card" id="dev-tests" style="display:none">
+        <h3 style="margin-top:0">Developer self‑tests</h3>
+        <button class="btn" id="runTests" type="button">Run self‑tests</button>
+        <pre id="testOutput" class="subtle" style="white-space:pre-wrap"></pre>
+      </div>
     </aside>
   </main>
+
+  <!-- Plain-text print-only report -->
+  <section id="printReport" aria-hidden="true">
+    <h1>DDS‑17 Results & Answers</h1>
+    <div id="printMeta" class="small"></div>
+    <pre id="printBody"></pre>
+  </section>
 
   <footer class="wrap subtle">
     <div>Built for GitHub Pages • No frameworks • MIT License (code only). DDS‑17 © respective copyright holders.</div>
@@ -152,11 +177,14 @@
     {n:16, text:"Not feeling motivated to keep up my diabetes self management.", sub:"RD"},
     {n:17, text:"Feeling that friends or family don't give me the emotional support that I would like.", sub:"ID"},
   ];
-  const SUB_NAMES = {EB:"Emotional Burden", PD:"Physician-related Distress", RD:"Regimen-related Distress", ID:"Interpersonal Distress"};
   const SUB_DIV = {EB:5, PD:4, RD:5, ID:3};
 
   const form = document.getElementById('form');
   const results = document.getElementById('results');
+  const printMeta = document.getElementById('printMeta');
+  const printBody = document.getElementById('printBody');
+  const runTestsBtn = document.getElementById('runTests');
+  const testOutput = document.getElementById('testOutput');
 
   function renderQuestions(){
     const fs = document.createDocumentFragment();
@@ -261,13 +289,106 @@
     results.innerHTML = '<div class="subtle">Complete all 17 items, then click <em>Calculate scores</em>.</div>';
   }
 
+  // Helpers to compute and print a compact, single-page report
+  function computeMetrics(){
+    const {vals, complete} = getValues();
+    const answered = ITEMS.filter(i=> vals[i.n] != null);
+    const all = ITEMS.map(i=> vals[i.n] ?? 0);
+    const totalMean = answered.length === ITEMS.length ? Number(mean(all).toFixed(2)) : NaN;
+    const bySub = {EB:[], PD:[], RD:[], ID:[]};
+    ITEMS.forEach(i => { if(vals[i.n] != null) bySub[i.sub].push(vals[i.n]); });
+    const subMeans = Object.fromEntries(Object.entries(bySub).map(([k,arr])=>[
+      k, arr.length ? Number(mean(arr).toFixed(2)) : NaN
+    ]));
+    return {vals, complete, totalMean, subMeans};
+  }
+
+  function generatePrint(){
+    const {vals, complete, totalMean, subMeans} = computeMetrics();
+    const now = new Date();
+    const dt = now.toLocaleString();
+    printMeta.textContent = `Generated: ${dt}  •  Scale 1–6 (1=Not a problem, 6=A very serious problem)`;
+
+    const lines = [];
+    if(!Number.isNaN(totalMean)){
+      const flag = totalMean >= 4 ? 'HIGH' : (totalMean >= 3 ? 'MOD' : 'LOW');
+      lines.push(`TOTAL MEAN: ${totalMean.toFixed(2)}  [${flag}]`);
+    } else {
+      lines.push('TOTAL MEAN: —   (incomplete)');
+    }
+    const fmt = (v)=> Number.isNaN(v) ? '—' : v.toFixed(2);
+    lines.push(`EB: ${fmt(subMeans.EB)}   PD: ${fmt(subMeans.PD)}   RD: ${fmt(subMeans.RD)}   ID: ${fmt(subMeans.ID)}`);
+    lines.push('');
+    lines.push('ANSWERS (Q#: score):');
+
+    const row = [];
+    ITEMS.forEach(i=>{ row.push(`${i.n}:${vals[i.n] ?? '—'}`); });
+    let buf = '';
+    row.forEach((cell,idx)=>{
+      const s = (idx? '  ' : '') + cell;
+      if((buf + s).length > 80){ lines.push(buf); buf = cell; }
+      else { buf += s; }
+    });
+    if(buf) lines.push(buf);
+
+    // FIX: use proper newline escape, not a raw line break
+    printBody.textContent = lines.join('\n');
+  }
+
+  // --- Developer self-tests (run manually) ---
+  function setAllAnswers(val){
+    ITEMS.forEach(i=>{
+      const input = form.querySelector(`input[name="q${i.n}"][value="${val}"]`);
+      if(input) input.checked = true;
+    });
+  }
+  function clearAllAnswers(){ form.reset(); }
+
+  function approxEqual(a,b,eps=1e-6){ return Math.abs(a-b) <= eps; }
+
+  function runSelfTests(){
+    const out = [];
+
+    // Test 1: all 1s
+    clearAllAnswers(); setAllAnswers(1);
+    let m = computeMetrics();
+    out.push(`#1 all 1s → total mean should be 1.00`);
+    out.push(` actual: ${m.totalMean}`);
+    if(!(approxEqual(m.totalMean,1))) out.push('  FAIL'); else out.push('  PASS');
+
+    // Test 2: all 3s
+    clearAllAnswers(); setAllAnswers(3);
+    m = computeMetrics();
+    out.push(`#2 all 3s → total mean should be 3.00; subs 3.00`);
+    out.push(` actual: total=${m.totalMean} EB=${m.subMeans.EB} PD=${m.subMeans.PD} RD=${m.subMeans.RD} ID=${m.subMeans.ID}`);
+    const pass2 = approxEqual(m.totalMean,3) && approxEqual(m.subMeans.EB,3) && approxEqual(m.subMeans.PD,3) && approxEqual(m.subMeans.RD,3) && approxEqual(m.subMeans.ID,3);
+    out.push(pass2 ? '  PASS' : '  FAIL');
+
+    // Test 3: incomplete (first 5 answered with 6)
+    clearAllAnswers();
+    for(let i=1;i<=5;i++){
+      const input = form.querySelector(`input[name="q${i}"][value="6"]`);
+      if(input) input.checked = true;
+    }
+    m = computeMetrics();
+    out.push(`#3 incomplete → total mean should be NaN, generatePrint should not throw`);
+    out.push(` actual totalMean isNaN: ${Number.isNaN(m.totalMean)}`);
+    const before = printBody.textContent;
+    try{ generatePrint(); out.push('  generatePrint: PASS'); }
+    catch(e){ out.push('  generatePrint: FAIL ' + e.message); }
+
+    // Restore: clear form
+    clearAllAnswers();
+
+    testOutput.textContent = out.join('\n');
+  }
+
   // Wire up UI
   document.getElementById('calcBtn').addEventListener('click', calc);
   document.getElementById('resetBtn').addEventListener('click', resetAll);
-  document.getElementById('printBtn').addEventListener('click', ()=>{ calc(); window.print(); });
-
-  // Ensure scores are updated before printing even if user uses Cmd/Ctrl+P
-  window.addEventListener('beforeprint', calc);
+  document.getElementById('printBtn').addEventListener('click', ()=>{ calc(); generatePrint(); window.print(); });
+  window.addEventListener('beforeprint', ()=>{ calc(); generatePrint(); });
+  if(runTestsBtn){ runTestsBtn.addEventListener('click', runSelfTests); }
 
   // Initial render
   renderQuestions();
