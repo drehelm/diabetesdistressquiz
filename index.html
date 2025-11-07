@@ -53,6 +53,20 @@
     }
     .subtle{color:var(--muted)}
     .req{color:var(--danger);font-weight:700}
+
+    /* PRINT-FRIENDLY LAYOUT */
+    @media print {
+      @page { size: auto; margin: 12mm; }
+      body{ background:#fff; }
+      header, aside, .controls, details, footer{ display:none !important; }
+      .wrap{ max-width:none; padding:0; }
+      main{ padding:0; }
+      .card{ box-shadow:none; border:0; margin:0; padding:0; }
+      .q, .stat{ break-inside: avoid; page-break-inside: avoid; }
+      .q{ border:1px solid #ccc; margin:.4rem 0; padding:.6rem; }
+      .legend{ color:#111; }
+      .grid{ grid-template-columns:1fr !important; }
+    }
   </style>
 </head>
 <body>
@@ -77,8 +91,6 @@
           <button class="btn primary" id="calcBtn" type="button">Calculate scores</button>
           <button class="btn" id="resetBtn" type="button">Reset</button>
           <button class="btn ghost" id="printBtn" type="button">Print / Save PDF</button>
-          <button class="btn ghost" id="saveBtn" type="button" title="Save to this browser">Save</button>
-          <button class="btn ghost" id="loadBtn" type="button">Load</button>
         </div>
       </div>
 
@@ -106,7 +118,6 @@
         <p class="subtle">This open‑source page implements the DDS‑17 questionnaire and scoring client‑side so you can host it on GitHub Pages. Your entries are not sent anywhere.</p>
         <ul class="subtle">
           <li><strong>Keyboard:</strong> Use 1–6 to select a score when a question is focused.</li>
-          <li><strong>Privacy:</strong> Use <em>Save</em>/<em>Load</em> to store answers in <code>localStorage</code> on this device only.</li>
         </ul>
       </div>
       <div class="card">
@@ -122,7 +133,6 @@
 
   <script>
   // DDS-17 items and subscale mapping per the scoring sheet.
-  // Source: "The Diabetes Distress Screening Scale (DDS17)" scoring sheet.
   const ITEMS = [
     {n:1,  text:"Feeling that diabetes is taking up too much of my mental and physical energy every day.", sub:"EB"},
     {n:2,  text:"Feeling that my doctor doesn't know enough about diabetes and diabetes care.", sub:"PD"},
@@ -236,7 +246,6 @@
     frag.appendChild(mk(`Regimen-related Distress (items 5,6,10,12,16 ÷ ${SUB_DIV.RD})`, subMeans.RD));
     frag.appendChild(mk(`Interpersonal Distress (items 7,13,17 ÷ ${SUB_DIV.ID})`, subMeans.ID));
 
-    // Optional: list any single items ≥3 to prompt discussion
     const flagged = ITEMS.filter(i => vals[i.n] >= 3).map(i=>`${i.n}`);
     const note = document.createElement('div');
     note.className = 'subtle';
@@ -250,36 +259,18 @@
   function resetAll(){
     form.reset();
     results.innerHTML = '<div class="subtle">Complete all 17 items, then click <em>Calculate scores</em>.</div>';
-    localStorage.removeItem('dds17Answers');
-  }
-
-  function save(){
-    const {vals} = getValues();
-    localStorage.setItem('dds17Answers', JSON.stringify(vals));
-  }
-  function load(){
-    const raw = localStorage.getItem('dds17Answers');
-    if(!raw) return;
-    const vals = JSON.parse(raw);
-    ITEMS.forEach(i=>{
-      const v = vals[i.n];
-      if(v){
-        const input = form.querySelector(`input[name="q${i.n}"][value="${v}"]`);
-        if(input) input.checked = true;
-      }
-    });
   }
 
   // Wire up UI
   document.getElementById('calcBtn').addEventListener('click', calc);
   document.getElementById('resetBtn').addEventListener('click', resetAll);
-  document.getElementById('printBtn').addEventListener('click', ()=>window.print());
-  document.getElementById('saveBtn').addEventListener('click', ()=>{save(); alert('Saved on this device.');});
-  document.getElementById('loadBtn').addEventListener('click', ()=>{load(); alert('Loaded from this device.');});
+  document.getElementById('printBtn').addEventListener('click', ()=>{ calc(); window.print(); });
+
+  // Ensure scores are updated before printing even if user uses Cmd/Ctrl+P
+  window.addEventListener('beforeprint', calc);
 
   // Initial render
   renderQuestions();
-  load();
   </script>
 </body>
 </html>
